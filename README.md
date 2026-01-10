@@ -20,7 +20,7 @@ A smart, AI-powered webpage monitoring tool that detects new content, extracts i
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/webpage-monitor.git
+    git clone https://github.com/henryhyunwookim/webpage-monitor.git
     cd webpage-monitor
     ```
 
@@ -64,8 +64,44 @@ On the first run, the tool will fetch the current state of all pages and summari
 **Daily Automation**:
 You can use `cron` (Linux) or Task Scheduler (Windows) to run `main.py` once a day.
 
-### Cloud Deployment (Optional)
-This project is ready for Google Cloud Run. See `implementation_plan.md` (if available) or standard Cloud Run docs for deploying a Python script as a job.
+### Cloud Deployment (Google Cloud Run)
+
+This repository includes a deployment script (`deploy.ps1`) to automate deployment to Google Cloud Run (Free Tier).
+
+**Prerequisites**:
+- Google Cloud Project with billing enabled.
+- `gcloud` CLI installed and authenticated.
+- Required APIs enabled: `run.googleapis.com`, `cloudbuild.googleapis.com`, `scheduler.googleapis.com`, `storage.googleapis.com`.
+
+**Steps**:
+1.  **Configure `deploy.ps1`**:
+    Edit the top variables in `deploy.ps1` to match your GCP project ID and region.
+    ```powershell
+    $PROJECT_ID = "your-project-id"
+    ```
+
+2.  **Run Deployment**:
+    ```powershell
+    .\deploy.ps1
+    ```
+    This will:
+    -   Create a GCS bucket for history storage.
+    -   Build and push the Docker image.
+    -   Deploy/Update the Cloud Run Job.
+    -   Create/Update the Cloud Scheduler Job (Schedule: Daily at Midnight KST).
+
+3.  **Set Environment Variables**:
+    Go to the Google Cloud Run Console > Jobs > `webpage-monitor-job` > Edit > Variables & Secrets.
+    Add:
+    -   `GOOGLE_API_KEY`
+    -   `SMTP_PASSWORD`
+
+4.  **Update Config**:
+    Ensure your `config.yaml` points to the created GCS bucket:
+    ```yaml
+    storage_file: "gs://your-project-id-monitor-data/history.json"
+    ```
 
 ## License
-MIT
+Creative Commons Attribution-NonCommercial 4.0 International License.
+See [LICENSE](LICENSE) file for details.

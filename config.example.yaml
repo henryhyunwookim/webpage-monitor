@@ -1,7 +1,7 @@
 # LLM Configuration
 llm:
   provider: "gemini"
-  model: "gemini-1.5-flash"
+  model: "gemini-2.5-flash"
   # api_key: will be loaded from env var GOOGLE_API_KEY
 
 # Email Configuration
@@ -21,5 +21,8 @@ sites:
     type: "video" # Hint for fetcher to look for different metadata if needed
 
 # System
+# For local run:
 storage_file: "data/history.json"
+# For Cloud Run (Required):
+# storage_file: "gs://your-bucket-name/history.json"
 diff_threshold: 10 # Minimum number of new characters/words to trigger summary
