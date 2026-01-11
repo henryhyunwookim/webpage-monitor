@@ -135,8 +135,8 @@ def main():
         storage.update_site_data(url, text_content)
         
     # 9. Send Report
+    date_str = datetime.now().strftime("%Y-%m-%d")
     if report_items:
-        date_str = datetime.now().strftime("%Y-%m-%d")
         report_lines = [f"# Daily Monitor Report - {date_str}\n"]
         
         for item in report_items:
@@ -147,16 +147,20 @@ def main():
             report_lines.append(f"---")
             
         report_markdown = "\n".join(report_lines)
-        
+        subject = f"Webpage Monitor Report - {date_str}"
         logger.info("Sending email report...")
-        notifier.send_report(f"Webpage Monitor Report - {date_str}", report_markdown)
-        
-        # Also save locally just in case
-        with open(f"data/report_{date_str}.md", "w", encoding="utf-8") as f:
-            f.write(report_markdown)
-            
     else:
         logger.info("No new content detected across all sites.")
+        report_markdown = f"# Daily Monitor Report - {date_str}\n\nNo new content was detected across all monitored sites today."
+        subject = f"Webpage Monitor: No New Content - {date_str}"
+        logger.info("Sending 'No Content' email notification...")
+
+    notifier.send_report(subject, report_markdown)
+    
+    # Also save locally
+    os.makedirs("data", exist_ok=True)
+    with open(f"data/report_{date_str}.md", "w", encoding="utf-8") as f:
+        f.write(report_markdown)
 
 if __name__ == "__main__":
     main()

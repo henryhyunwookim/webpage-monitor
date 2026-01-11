@@ -7,8 +7,8 @@ A smart, AI-powered webpage monitoring tool that detects new content, extracts i
 - **Smart Detection**: Uses diffing algorithms to detect significant content changes.
 - **AI Summarization**: Uses Google Gemini (via `google-generativeai`) to generate concise, insightful summaries of new content.
 - **Link Extraction**: Automatically finds and links to the specific source articles.
-- **Daily Reports**: Sends a consolidated email report with summaries and key insights.
-- **Anti-Bot Bypass**: Includes basic logic to handle Cloudflare visuals/challenges using Playwright.
+- **Daily Reports**: Sends a consolidated email report with summaries and key insights. Even if no new content is found, a "No New Content" confirmation email is sent to ensure the monitor is active.
+- **Anti-Bot Bypass**: Includes basic logic to handle Cloudflare visuals/challenges using Playwright. (Enhanced with automation checks).
 
 ## Prerequisites
 
