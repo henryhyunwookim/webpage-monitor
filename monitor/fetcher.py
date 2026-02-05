@@ -1,6 +1,8 @@
 from playwright.sync_api import sync_playwright
+from playwright_stealth.stealth import SCRIPTS
 from bs4 import BeautifulSoup
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -16,21 +18,39 @@ class Fetcher:
             with sync_playwright() as p:
                 browser = p.chromium.launch(
                     headless=True,
-                    args=["--disable-blink-features=AutomationControlled"]
+                    args=[
+                        "--disable-blink-features=AutomationControlled", 
+                        "--start-maximized", 
+                        "--disable-infobars"
+                    ],
+                    ignore_default_args=["--enable-automation"]
                 )
-                # Use a consistent context with a real user agent string
-                context = browser.new_context(
-                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    viewport={'width': 1920, 'height': 1080},
-                    locale='en-US',
-                    timezone_id='America/New_York'
-                )
+                
+                # Check for storage state
+                state_file = "state.json"
+                context_args = {
+                    "user_agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+                    "viewport": {'width': 1920, 'height': 1080},
+                    "locale": 'en-US',
+                    "timezone_id": 'America/New_York'
+                }
+                
+                if os.path.exists(state_file):
+                    logger.info("Loading browser state from state.json...")
+                    context_args["storage_state"] = state_file
+
+                context = browser.new_context(**context_args)
+                
                 page = context.new_page()
+                
+                # Apply stealth manually since stealth_sync is missing
+                for script in SCRIPTS.values():
+                    context.add_init_script(script)
+
                 logger.info(f"Navigating to {url} with Playwright...")
                 # Increase timeout to 60s
                 page.goto(url, timeout=60000)
                 
-                # Wait for some content to load. 
                 # Wait for some content to load.
                 try:
                     # Cloudflare challenge often takes 5-10s.
@@ -42,21 +62,24 @@ class Fetcher:
                 content_str = page.content().lower()
                 title_str = page.title().lower()
                 
-                if "just a moment" in title_str or "verify you are human" in content_str or "cloudflare" in content_str:
-                    logger.info("Challenge page detected. Attempting to bypass...")
+                if any(x in title_str for x in ["just a moment", "verify you are human", "cloudflare", "しばらくお待ちください"]) or "verify you are human" in content_str:
+                    logger.info("Challenge page detected. Waiting for stealth bypass...")
                     
-                    # Human behavior simulation
-                    try:
-                        page.mouse.move(100, 100)
-                        page.wait_for_timeout(1000)
-                        page.mouse.move(200, 200)
-                    except:
-                        pass
-                        
-                    # Wait longer for redirect
-                    page.wait_for_timeout(20000)
+                    # Even with stealth, sometimes a little wait helps scripts run
+                    page.wait_for_timeout(5000)
+                    
+                    # Re-check
+                    content_str = page.content().lower()
+                    if "verify you are human" in content_str:
+                         logger.info("Still on challenge page. Waiting longer...")
+                         page.wait_for_timeout(10000)
                 
                 content = page.content()
+                
+                # Save state if possible (to capture cookies/tokens after bypass)
+                if "verify you are human" not in content.lower():
+                     context.storage_state(path=state_file)
+                     
                 browser.close()
                 return content
         except Exception as e:
@@ -72,7 +95,7 @@ class Fetcher:
         # Security/Challenge Page Detection
         # Cloudflare and others often have specific titles or text
         text_lower = soup.get_text().lower()
-        if "verify you are human" in text_lower or "just a moment..." in text_lower or "cloudflare" in text_lower:
+        if any(x in text_lower for x in ["verify you are human", "just a moment...", "cloudflare", "しばらくお待ちください"]):
             logger.warning("Detected security challenge page. Skipping content extraction to avoid false positives.")
             return ""
         

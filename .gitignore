@@ -7,3 +7,4 @@ monitor.log
 
 # User specific config
 config.yaml
+artifacts/

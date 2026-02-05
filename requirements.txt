@@ -5,3 +5,4 @@ pyyaml
 python-dotenv
 playwright
 google-cloud-storage
+playwright-stealth
