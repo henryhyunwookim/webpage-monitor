@@ -1,107 +1,153 @@
 # AI Webpage Monitor
 
-A smart, AI-powered webpage monitoring tool that detects new content, extracts insights, and sends daily summaries via email. Powered by Google Gemini and Playwright.
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Playwright](https://img.shields.io/badge/playwright-v1.40+-green.svg)](https://playwright.dev/)
+[![Gemini AI](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-orange.svg)](https://deepmind.google/technologies/gemini/)
 
-## Features
+A professional, AI-native webpage monitoring engine designed to track updates, summarize changes with high precision, and deliver actionable insights directly to your inbox. Optimized for both local use and cloud-native deployment on Google Cloud Platform.
 
-- **Smart Detection**: Uses diffing algorithms to detect significant content changes.
-- **AI Summarization**: Uses Google Gemini (via `google-generativeai`) to generate concise, insightful summaries of new content.
-- **Link Extraction**: Automatically finds and links to the specific source articles.
-- **Daily Reports**: Sends a consolidated email report with summaries and key insights. Even if no new content is found, a "No New Content" confirmation email is sent to ensure the monitor is active.
-- **Anti-Bot Bypass**: Includes basic logic to handle Cloudflare visuals/challenges using Playwright. (Enhanced with automation checks).
+---
 
-## Prerequisites
+## 🏗️ Architecture & System Design
 
-- Python 3.10+
-- Google Cloud API Key (for Gemini)
-- Gmail Account (for sending reports)
+The application follows a modular architecture based on a **Fetch-Extract-Diff-Summarize-Notify** pipeline. This design ensures separation of concerns, allowing for easy updates to the AI model, fetching logic, or storage backend.
 
-## Setup
+### System Overview
 
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/henryhyunwookim/webpage-monitor.git
-    cd webpage-monitor
-    ```
+Standard flow of the monitoring engine:
 
-2.  **Install dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    playwright install chromium
-    ```
-
-3.  **Environment Variables**:
-    Create a `.env` file based on `.env.example`:
-    ```bash
-    cp .env.example .env
-    ```
-    Fill in your API keys:
-    - `GOOGLE_API_KEY`: Your Gemini API Key.
-    - `SMTP_PASSWORD`: Your Gmail App Password (not your login password).
-
-4.  **Configuration**:
-    Create a `config.yaml` based on `config.example.yaml`:
-    ```bash
-    cp config.example.yaml config.yaml
-    ```
-    Edit `config.yaml` to list the websites you want to monitor:
-    ```yaml
-    sites:
-      - url: "https://example.com/blog"
-        name: "Example Blog"
-    ```
-
-## Usage
-
-**Run the monitor manually**:
-```bash
-python main.py
+```text
+[ config.yaml ]       [ .env ]
+       |                 |
+       v                 v
+    +-----------------------+
+    |       main.py         | (Orchestrator)
+    +-----------+-----------+
+                |
+    +-----------v-----------+      +-----------------------+
+    |       Fetcher         | ---> |   Target Webpages     |
+    | (Playwright/Stealth)  |      | (Bypass Anti-Bot)     |
+    +-----------+-----------+      +-----------------------+
+                |
+    +-----------v-----------+      +-----------------------+
+    |     Diff Engine       | <--- |    Storage Backend    |
+    | (Set-based comparison)|      | (Local JSON / GCS)    |
+    +-----------+-----------+      +-----------------------+
+                |
+    +-----------v-----------+      +-----------------------+
+    |      Summarizer       | ---> |   Google Gemini AI    |
+    | (Insight Extraction)  |      |   (LMM Analysis)      |
+    +-----------+-----------+      +-----------------------+
+                |
+    +-----------v-----------+      +-----------------------+
+    |       Notifier        | ---> |    User's Inbox       |
+    |  (SMTP / Gmail API)   |      | (Daily Report / MD)   |
+    +-----------------------+      +-----------------------+
 ```
 
-**First Run**:
-On the first run, the tool will fetch the current state of all pages and summarize the *most recent* post found on each page to establish a baseline.
+> [!NOTE]
+> If your viewer supports Mermaid, you will see a dynamic version of the diagram below.
 
-**Daily Automation**:
-You can use `cron` (Linux) or Task Scheduler (Windows) to run `main.py` once a day.
+```mermaid
+graph TD
+    M["main.py"] --> F["Fetcher"]
+    M --> S["Storage"]
+    M --> D["Diff Engine"]
+    M --> AI["Summarizer"]
+    M --> N["Notifier"]
 
-### Cloud Deployment (Google Cloud Run)
+    C["config.yaml"] --> M
+    E[".env"] --> M
+    
+    F --> WEB["Target Webpages"]
+    AI --> SUM["Gemini AI"]
+    N --> EMAIL["User Inbox"]
+```
 
-This repository includes a deployment script (`deploy.ps1`) to automate deployment to Google Cloud Run (Free Tier).
+### Logical Flow
+1.  **Configuration Loading**: Orchestrates the cycle based on `config.yaml` and environment variables.
+2.  **Intelligent Fetching**: Launches a headless browser instance per site using **Playwright**, applying a sophisticated **Stealth Layer** to bypass automated traffic blockers (Cloudflare, etc.).
+3.  **Content Extraction**: Parses the DOM using BeautifulSoup, striping noise (nav, footer, scripts) while preserving Markdown-style links for AI context.
+4.  **Stateful Diffing**: Compares current content against historical data stored in the **Storage Backend**. It uses a set-based line comparison to identify unique *added* content while ignoring minor layout shifts.
+5.  **AI Analysis**: Sends the "new content" to **Google Gemini**. The system uses specialized prompt engineering to:
+    - Identify specific article titles and source URLs.
+    - Synthesize a "So What?" focused summary.
+    - Extract key strategic insights.
+6.  **Reporting**: Aggregates all site updates into a single Markdown-formatted email. Supports a "No New Content" heartbeat to confirm system health.
 
-**Prerequisites**:
-- Google Cloud Project with billing enabled.
-- `gcloud` CLI installed and authenticated.
-- Required APIs enabled: `run.googleapis.com`, `cloudbuild.googleapis.com`, `scheduler.googleapis.com`, `storage.googleapis.com`.
+---
 
-**Steps**:
-1.  **Configure `deploy.ps1`**:
-    Edit the top variables in `deploy.ps1` to match your GCP project ID and region.
-    ```powershell
-    $PROJECT_ID = "your-project-id"
-    ```
+## 🚀 Key Functionalities
 
-2.  **Run Deployment**:
-    ```powershell
-    .\deploy.ps1
-    ```
-    This will:
-    -   Create a GCS bucket for history storage.
-    -   Build and push the Docker image.
-    -   Deploy/Update the Cloud Run Job.
-    -   Create/Update the Cloud Scheduler Job (Schedule: Daily at Midnight KST).
+### 🧠 AI-Powered Insights
+Unlike traditional monitors that only detect change, this tool *understands* the change. Using Gemini 1.5 Flash, it filters out noise and summarizes long updates into concise, bulleted insights.
 
-3.  **Set Environment Variables**:
-    Go to the Google Cloud Run Console > Jobs > `webpage-monitor-job` > Edit > Variables & Secrets.
-    Add:
-    -   `GOOGLE_API_KEY`
-    -   `SMTP_PASSWORD`
+### 🕵️ Advanced Stealth & Anti-Bot
+Built-in protection against modern bot-detection:
+- **Playwright Stealh**: Overrides `navigator.webdriver`, mocks `chrome` objects, and mimics real-user plugins/MimeTypes.
+- **Human-like Interaction**: Randomized timeouts and specific user-agent rotations.
+- **State Persistence**: Saves browser state (cookies/tokens) after successfully bypassing challenges to ensure smoother subsequent runs.
 
-4.  **Update Config**:
-    Ensure your `config.yaml` points to the created GCS bucket:
-    ```yaml
-    storage_file: "gs://your-project-id-monitor-data/history.json"
-    ```
+### ☁️ Cloud-Native Storage
+Seamlessly switch between:
+- **LocalStorage**: Perfect for single-machine usage.
+- **GCSStorage**: Enterprise-ready storage using Google Cloud Storage, enabling serverless execution on Cloud Run.
 
-## License
+---
+
+## 🛠️ Setup & Installation
+
+### Prerequisites
+- **Python 3.10+**
+- **Google Cloud API Key** (for Gemini)
+- **Gmail Account** (for sending reports)
+
+### 1. Installation
+```bash
+git clone https://github.com/henryhyunwookim/webpage-monitor.git
+cd webpage-monitor
+pip install -r requirements.txt
+playwright install chromium
+```
+
+### 2. Configuration
+Create a `.env` file:
+```bash
+GOOGLE_API_KEY=your_gemini_key
+SMTP_PASSWORD=your_gmail_app_password
+```
+
+Create a `config.yaml`:
+```yaml
+storage_file: "data/history.json" # Or "gs://bucket-name/history.json"
+llm:
+  model: "gemini-1.5-flash"
+email:
+  sender: "your-email@gmail.com"
+  recipient: "target-email@gmail.com"
+sites:
+  - url: "https://example.com/news"
+    name: "Example News"
+```
+
+---
+
+## ☁️ Deployment (Google Cloud Run)
+
+The repository includes a `deploy.ps1` script for one-command deployment to GCP.
+
+### Automated Cloud Architecture
+- **Cloud Run Job**: Executes the monitoring logic containerized.
+- **Cloud Scheduler**: Triggers the job daily (or on your preferred schedule).
+- **GCS Bucket**: Persists the monitoring history across serverless executions.
+
+To deploy:
+1. Update `$PROJECT_ID` in `deploy.ps1`.
+2. Run `.\deploy.ps1` in PowerShell.
+
+---
+
+## 📜 License
 Creative Commons Attribution-NonCommercial 4.0 International License.
 See [LICENSE](LICENSE) file for details.
