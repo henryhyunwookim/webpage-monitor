@@ -4,7 +4,7 @@ __pycache__/
 *.pyc
 .env
 data/
-monitor.log
+logs/
 venv/
 .DS_Store
-!config.yaml
+!config/config.yaml
