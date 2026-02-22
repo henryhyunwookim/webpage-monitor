@@ -1,11 +1,17 @@
-__pycache__/
-*.pyc
+# Environment and Secrets
 .env
-.DS_Store
-data/
-logs/
-.vs/
+config/.env
 
 # User specific config
 config.yaml
+config/config.yaml
+config/config.yml
+
+# Storage and Data
+data/
+logs/
+.vs/
+__pycache__/
+*.pyc
+.DS_Store
 artifacts/

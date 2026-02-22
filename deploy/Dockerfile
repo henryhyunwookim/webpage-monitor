@@ -22,8 +22,8 @@ RUN playwright install-deps chromium
 
 # Copy application code
 COPY . .
-# Explicitly copy config.yaml to ensure it's present even if ignored by .gcloudignore
-COPY config.yaml .
+# Ensure config file is in expected location
+COPY config/config.yaml config/config.yaml
 
 # Entrypoint
 CMD ["python", "src/main.py"]

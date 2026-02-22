@@ -21,15 +21,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def load_config(path='config.yaml'):
+def load_config(path=os.path.join('config', 'config.yaml')):
+    # Try the provided path, or fall back to 'config/config.yaml' if not found
+    if not os.path.exists(path) and path == 'config.yaml':
+        path = os.path.join('config', 'config.yaml')
+    
     with open(path, 'r') as f:
         return yaml.safe_load(f)
 
 def main():
-    load_dotenv() # Load env vars from .env
+    # Load env vars from config/.env if it exists, otherwise fall back to root .env
+    env_path = os.path.join('config', '.env')
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+    else:
+        load_dotenv() 
     
     parser = argparse.ArgumentParser(description="Webpage Monitor")
-    parser.add_argument("--config", default="config.yaml", help="Path to config file")
+    parser.add_argument("--config", default=os.path.join('config', 'config.yaml'), help="Path to config file")
     args = parser.parse_args()
 
     config = load_config(args.config)

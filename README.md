@@ -69,14 +69,31 @@ graph TD
 
 The project follows a clean, modular structure:
 
-*   **`src/`**: Contains the core logic and entry point (`main.py`).
-*   **`config/`**: Configuration templates (`.env.example`, `config.example.yaml`).
-*   **`deploy/`**: Infrastructure and deployment files (`Dockerfile`, `deploy.ps1`).
-*   **`scripts/`**: Convenience runner scripts (`run.bat`).
-*   **`logs/`**: Application execution logs.
-*   **`data/`**: Local storage for monitoring history.
-*   **`config.yaml`**: Your active site configuration (root).
-*   **`.env`**: Your active secrets (root).
+```text
+.
+├── config/             # Configuration templates
+│   ├── .env              # Environment variables
+│   └── config.yaml       # Active site configuration
+├── deploy/             # Deployment manifests
+│   ├── .gcloudignore     # Google Cloud ignore file
+│   ├── deploy.ps1        # Deployment script
+│   └── Dockerfile        # Dockerfile
+├── scripts/            # Utility scripts for local execution
+│   └── run.bat           # Run script
+├── src/                # Application source code
+│   ├── monitor/         # Pipeline logic
+│   │   ├── diff.py       # Diff logic
+│   │   ├── fetcher.py    # Fetcher logic
+│   │   ├── notifier.py   # Notifier logic
+│   │   ├── stealth.py    # Stealth layer logic
+│   │   ├── storage.py    # Storage logic
+│   │   └── summarizer.py # Summarizer logic
+│   └── main.py          # Main entry point
+├── .gitignore          # Git ignore file
+├── LICENSE             # License file
+├── README.md           # Documentation
+└── requirements.txt    # Python dependencies
+```
 
 ---
 
