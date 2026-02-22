@@ -16,7 +16,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("monitor.log", encoding='utf-8')
+        logging.FileHandler(os.path.join(os.path.dirname(__file__), "..", "logs", "monitor.log"), encoding='utf-8')
     ]
 )
 logger = logging.getLogger(__name__)

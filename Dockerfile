@@ -26,4 +26,4 @@ COPY . .
 COPY config.yaml .
 
 # Entrypoint
-CMD ["python", "main.py"]
+CMD ["python", "src/main.py"]

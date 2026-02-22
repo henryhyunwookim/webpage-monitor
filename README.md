@@ -22,7 +22,7 @@ Standard flow of the monitoring engine:
        |                 |
        v                 v
     +-----------------------+
-    |       main.py         | (Orchestrator)
+    |       src/main.py     | (Orchestrator)
     +-----------+-----------+
                 |
     +-----------v-----------+      +-----------------------+
@@ -51,7 +51,7 @@ Standard flow of the monitoring engine:
 
 ```mermaid
 graph TD
-    M["main.py"] --> F["Fetcher"]
+    M["src/main.py"] --> F["Fetcher"]
     M --> S["Storage"]
     M --> D["Diff Engine"]
     M --> AI["Summarizer"]
@@ -64,6 +64,38 @@ graph TD
     AI --> SUM["Gemini AI"]
     N --> EMAIL["User Inbox"]
 ```
+
+### 📁 Repository Structure
+
+The project follows a clean, modular structure:
+
+*   **`src/`**: Contains the core logic and entry point.
+    *   **`main.py`**: The central orchestrator.
+    *   **`monitor/`**: Core package handling fetching, diffing, and AI logic.
+*   **`logs/`**: Dedicated folder for application execution logs.
+*   **`data/`**: Local storage for monitoring history (if configured).
+*   **`config.yaml`**: Main configuration for sites and services.
+*   **`Dockerfile`**: Container definition for deployment.
+
+---
+
+## 🧠 Generalizability & Intelligence
+
+This monitor is designed to be **platform-agnostic** and can be used to track updates on virtually any website. Unlike traditional CSS-selector based tools, it leverages:
+
+### 1. Browser-Based Extraction (Playwright)
+By using a real Chromium browser, the monitor can handle:
+- **Single Page Applications (SPAs)**: Even if content is loaded dynamically via JavaScript (React, Vue, etc.), the monitor sees exactly what a user sees.
+- **Anti-Bot Stealth**: Built-in layers to bypass Cloudflare and other automated traffic blockers.
+
+### 2. LLM-Powered Semantic Analysis
+Instead of looking for specific HTML tags that might change during a site site redesign, the monitor:
+- Extracts the **raw text content** of the page.
+- Uses **Google Gemini** to "read" and understand the changes.
+- Summarizes only relevant updates, filtering out noise like layout shifts or ads.
+
+### 3. Stateful set-based Diffing
+The engine compares content line-by-line, making it extremely resilient to site redesigns while remaining sensitive to new informative text.
 
 ### Logical Flow
 1.  **Configuration Loading**: Orchestrates the cycle based on `config.yaml` and environment variables.
@@ -118,17 +150,21 @@ GOOGLE_API_KEY=your_gemini_key
 SMTP_PASSWORD=your_gmail_app_password
 ```
 
-Create a `config.yaml`:
-```yaml
-storage_file: "data/history.json" # Or "gs://bucket-name/history.json"
-llm:
-  model: "gemini-1.5-flash"
-email:
-  sender: "your-email@gmail.com"
-  recipient: "target-email@gmail.com"
-sites:
-  - url: "https://example.com/news"
-    name: "Example News"
+### 3. Execution
+
+Run the monitor locally:
+```bash
+# Using the Windows runner
+./run.bat
+
+# Or directly via Python
+python src/main.py
+```
+
+Run using Docker:
+```bash
+docker build -t webpage-monitor .
+docker run --env-file .env webpage-monitor
 ```
 
 ---
