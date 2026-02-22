@@ -155,7 +155,7 @@ SMTP_PASSWORD=your_gmail_app_password
 Run the monitor locally:
 ```bash
 # Using the Windows runner
-./run.bat
+./scripts/run.bat
 
 # Or directly via Python
 python src/main.py
@@ -163,7 +163,7 @@ python src/main.py
 
 Run using Docker:
 ```bash
-docker build -t webpage-monitor .
+docker build -t webpage-monitor -f deploy/Dockerfile .
 docker run --env-file .env webpage-monitor
 ```
 
@@ -171,7 +171,7 @@ docker run --env-file .env webpage-monitor
 
 ## ☁️ Deployment (Google Cloud Run)
 
-The repository includes a `deploy.ps1` script for one-command deployment to GCP.
+The repository includes a `deploy/deploy.ps1` script for one-command deployment to GCP.
 
 ### Automated Cloud Architecture
 - **Cloud Run Job**: Executes the monitoring logic containerized.
@@ -179,8 +179,8 @@ The repository includes a `deploy.ps1` script for one-command deployment to GCP.
 - **GCS Bucket**: Persists the monitoring history across serverless executions.
 
 To deploy:
-1. Update `$PROJECT_ID` in `deploy.ps1`.
-2. Run `.\deploy.ps1` in PowerShell.
+1. Update `$PROJECT_ID` in `deploy/deploy.ps1`.
+2. Run `pwsh deploy/deploy.ps1` in PowerShell.
 
 ---
 

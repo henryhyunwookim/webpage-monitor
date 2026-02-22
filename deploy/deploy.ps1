@@ -22,9 +22,9 @@ else {
     Write-Host "Bucket exists."
 }
 
-# 2. Build and Submit Image
-Write-Host "Building container image..."
-gcloud builds submit --tag $IMAGE_NAME .
+# 2. Build and Submit Image (using root context)
+Write-Host "Building container image from root..."
+gcloud builds submit --tag $IMAGE_NAME --dockerfile deploy/Dockerfile .
 
 # 3. Create/Update Cloud Run Job
 Write-Host "Updating Cloud Run Job: $JOB_NAME..."
