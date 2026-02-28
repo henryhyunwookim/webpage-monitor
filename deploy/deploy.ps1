@@ -4,12 +4,13 @@ $PROJECT_ID = "serp-425005"
 $REGION = "us-central1"
 $JOB_NAME = "webpage-monitor-job"
 $IMAGE_NAME = "gcr.io/$PROJECT_ID/$JOB_NAME"
-$BUCKET_NAME = "$PROJECT_ID-monitor-data" # Automated bucket name
-$SCHEDULE = "0 0 * * *" # Midnight daily
+$BUCKET_NAME = "$PROJECT_ID-monitor-data" 
+$SCHEDULE = "0 0 * * *" 
 $TIMEZONE = "Asia/Seoul"
 
 Write-Host "Configuring Gcloud Project..."
 gcloud config set project $PROJECT_ID
+$PROJECT_NUMBER = gcloud projects describe $PROJECT_ID --format="value(projectNumber)"
 
 # 1. GCS Bucket Setup
 Write-Host "Checking GCS Bucket: gs://$BUCKET_NAME..."
@@ -18,17 +19,21 @@ if (-not $bucketExists) {
     Write-Host "Creating bucket gs://$BUCKET_NAME..."
     gcloud storage buckets create gs://$BUCKET_NAME --location=$REGION
 }
-else {
-    Write-Host "Bucket exists."
-}
 
-# 2. Build and Submit Image (using root context)
+# 2. Build and Submit Image
 Write-Host "Building container image from root..."
-gcloud builds submit --tag $IMAGE_NAME --dockerfile deploy/Dockerfile .
+try {
+    Copy-Item -Path "deploy/Dockerfile" -Destination "." -Force
+    Copy-Item -Path "deploy/.gcloudignore" -Destination "." -Force
+    gcloud builds submit --tag $IMAGE_NAME .
+}
+finally {
+    if (Test-Path "Dockerfile") { Remove-Item -Path "Dockerfile" -Force }
+    if (Test-Path ".gcloudignore") { Remove-Item -Path ".gcloudignore" -Force }
+}
 
 # 3. Create/Update Cloud Run Job
 Write-Host "Updating Cloud Run Job: $JOB_NAME..."
-# Check if job exists to update or create
 gcloud run jobs describe $JOB_NAME --region $REGION 2>$null
 if ($LASTEXITCODE -eq 0) {
     gcloud run jobs update $JOB_NAME --image $IMAGE_NAME --region $REGION --max-retries 0 --task-timeout 10m
@@ -47,22 +52,23 @@ if ($LASTEXITCODE -ne 0) {
     gcloud iam service-accounts create $SA_NAME --display-name "Webpage Monitor Scheduler SA"
 }
 
-# Grant Invoker Permission
-Write-Host "Granting Run Invoker permission..."
+Write-Host "Granting permissions..."
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA_EMAIL" --role="roles/run.invoker" | Out-Null
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA_EMAIL" --role="roles/run.developer" | Out-Null # Ensure job execution rights
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$SA_EMAIL" --role="roles/run.developer" | Out-Null
 
 # 5. Cloud Scheduler
 $SCHEDULER_JOB_NAME = "$JOB_NAME-trigger"
+$URI = "https://$REGION-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$PROJECT_NUMBER/jobs/$JOB_NAME:run"
+
 Write-Host "Updating Cloud Scheduler: $SCHEDULER_JOB_NAME..."
 gcloud scheduler jobs describe $SCHEDULER_JOB_NAME --location $REGION 2>$null
 if ($LASTEXITCODE -eq 0) {
-    gcloud scheduler jobs update http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="https://$REGION-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$PROJECT_ID/jobs/$JOB_NAME:run" --http-method=POST --oauth-service-account-email="$SA_EMAIL"
+    gcloud scheduler jobs update http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="$URI" --http-method=POST --message-body="{}" --update-headers="Content-Type=application/json" --oauth-service-account-email="$SA_EMAIL"
 }
 else {
-    gcloud scheduler jobs create http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="https://$REGION-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$PROJECT_ID/jobs/$JOB_NAME:run" --http-method=POST --oauth-service-account-email="$SA_EMAIL"
+    gcloud scheduler jobs create http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="$URI" --http-method=POST --message-body="{}" --headers="Content-Type=application/json" --oauth-service-account-email="$SA_EMAIL"
 }
 
 Write-Host "Deployment complete."
-Write-Host "IMPORTANT: You must set your environment variables (GOOGLE_API_KEY, SMTP_PASSWORD) in the Cloud Run Job Console:"
-Write-Host "https://console.cloud.google.com/run/jobs/details/$REGION/$JOB_NAME/configuration?project=$PROJECT_ID"
+Write-Host "IMPORTANT: Set your secrets (GOOGLE_API_KEY, SMTP_PASSWORD) in the Cloud Run Job Console if not yet set."
+
