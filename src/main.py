@@ -39,7 +39,14 @@ def main():
     
     storage = Storage(config['storage_file'])
     fetcher = Fetcher()
-    summarizer = Summarizer(model_name=config['llm']['model'])
+    try:
+        summarizer = Summarizer(model_name=config['llm']['model'])
+    except Exception as e:
+        logger.error(f"Failed to initialize Summarizer: {e}")
+        # Depending on criticality, we might exit or continue without summaries
+        # For now, let's assume we can continue but with a dummy/None summarizer
+        summarizer = None
+    
     notifier = Notifier(config['email'])
     
     report_items = []
@@ -76,15 +83,18 @@ def main():
              # First run initialization
             logger.info(f"First run for {name}. Identify the most recent post.")
             
-            initial_summary = summarizer.summarize(
-                text_content, 
-                context={
-                    "name": name, 
-                    "url": url,
-                    "date": datetime.now().strftime("%B %d, %Y"),
-                    "is_first_run": True
-                }
-            )
+            if summarizer:
+                initial_summary = summarizer.summarize(
+                    text_content, 
+                    context={
+                        "name": name, 
+                        "url": url,
+                        "date": datetime.now().strftime("%B %d, %Y"),
+                        "is_first_run": True
+                    }
+                )
+            else:
+                initial_summary = "Summarization skipped due to initialization failure."
             
             report_items.append({
                 "name": name,
@@ -117,14 +127,17 @@ def main():
         
         # 6. Summarize
         current_date_str = datetime.now().strftime("%B %d, %Y") # e.g., January 07, 2026
-        summary = summarizer.summarize(
-            new_content, 
-            context={
-                "name": name, 
-                "url": url,
-                "date": current_date_str
-            }
-        )
+        if summarizer:
+            summary = summarizer.summarize(
+                new_content, 
+                context={
+                    "name": name, 
+                    "url": url,
+                    "date": current_date_str
+                }
+            )
+        else:
+            summary = "Summarization skipped due to initialization failure."
         
         # 7. Add to Report
         report_items.append({

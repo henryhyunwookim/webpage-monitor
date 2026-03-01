@@ -63,10 +63,10 @@ $URI = "https://$REGION-run.googleapis.com/apis/run.googleapis.com/v1/namespaces
 Write-Host "Updating Cloud Scheduler: $SCHEDULER_JOB_NAME..."
 gcloud scheduler jobs describe $SCHEDULER_JOB_NAME --location $REGION 2>$null
 if ($LASTEXITCODE -eq 0) {
-    gcloud scheduler jobs update http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="$URI" --http-method=POST --message-body="{}" --update-headers="Content-Type=application/json" --oauth-service-account-email="$SA_EMAIL"
+    gcloud scheduler jobs update http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="$URI" --http-method=POST --message-body="{}" --update-headers="Content-Type=application/json" --oidc-service-account-email="$SA_EMAIL" --oidc-token-audience="$URI"
 }
 else {
-    gcloud scheduler jobs create http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="$URI" --http-method=POST --message-body="{}" --headers="Content-Type=application/json" --oauth-service-account-email="$SA_EMAIL"
+    gcloud scheduler jobs create http $SCHEDULER_JOB_NAME --location $REGION --schedule="$SCHEDULE" --time-zone="$TIMEZONE" --uri="$URI" --http-method=POST --message-body="{}" --headers="Content-Type=application/json" --oidc-service-account-email="$SA_EMAIL" --oidc-token-audience="$URI"
 }
 
 Write-Host "Deployment complete."
