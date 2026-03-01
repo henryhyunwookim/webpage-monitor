@@ -8,20 +8,11 @@ from monitor.fetcher import Fetcher
 from monitor.diff import get_new_content
 from monitor.summarizer import Summarizer
 from monitor.notifier import Notifier
+from monitor.logger import setup_logging
 from datetime import datetime
 
-# Setup logging
-handlers = [logging.StreamHandler()]
-if not os.environ.get('CLOUD_RUN_JOB'):
-    log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    handlers.append(logging.FileHandler(os.path.join(log_dir, "monitor.log"), encoding='utf-8'))
-
-logging.basicConfig(
-    level=logging.INFO, 
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=handlers
-)
+# Initialize centralized logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 def load_config(path=os.path.join('config', 'config.yaml')):
