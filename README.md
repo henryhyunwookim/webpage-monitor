@@ -3,9 +3,11 @@
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Playwright](https://img.shields.io/badge/playwright-v1.40+-green.svg)](https://playwright.dev/)
-[![Gemini AI](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-orange.svg)](https://deepmind.google/technologies/gemini/)
+[![Gemini AI](https://img.shields.io/badge/AI-Gemini%202.5%20Flash-orange.svg)](https://deepmind.google/technologies/gemini/)
 
 A professional, AI-native webpage monitoring engine designed to track updates, summarize changes with high precision, and deliver actionable insights directly to your inbox. Optimized for both local use and cloud-native deployment on Google Cloud Platform.
+
+![Architecture Diagram](NotebookLM/Visual%20Overview.png)
 
 ---
 
@@ -26,17 +28,17 @@ Standard flow of the monitoring engine:
     +-----------+-----------+
                 |
     +-----------v-----------+      +-----------------------+
-    |       Fetcher         | ---> |   Target Webpages     |
+    |       Fetcher         | <--> |   Target Webpages     |
     | (Playwright/Stealth)  |      | (Bypass Anti-Bot)     |
     +-----------+-----------+      +-----------------------+
                 |
     +-----------v-----------+      +-----------------------+
-    |     Diff Engine       | <--- |    Storage Backend    |
+    |     Diff Engine       | <--> |    Storage Backend    |
     | (Set-based comparison)|      | (Local JSON / GCS)    |
     +-----------+-----------+      +-----------------------+
                 |
     +-----------v-----------+      +-----------------------+
-    |      Summarizer       | ---> |   Google Gemini AI    |
+    |      Summarizer       | <--> |   Google Gemini AI    |
     | (Insight Extraction)  |      |   (LMM Analysis)      |
     +-----------+-----------+      +-----------------------+
                 |
@@ -46,26 +48,7 @@ Standard flow of the monitoring engine:
     +-----------------------+      +-----------------------+
 ```
 
-> [!NOTE]
-> If your viewer supports Mermaid, you will see a dynamic version of the diagram below.
-
-```mermaid
-graph TD
-    M["src/main.py"] --> F["Fetcher"]
-    M --> S["Storage"]
-    M --> D["Diff Engine"]
-    M --> AI["Summarizer"]
-    M --> N["Notifier"]
-
-    C["config.yaml"] --> M
-    E[".env"] --> M
-    
-    F --> WEB["Target Webpages"]
-    AI --> SUM["Gemini AI"]
-    N --> EMAIL["User Inbox"]
-```
-
-### 📁 Repository Structure
+### Repository Structure
 
 The project follows a clean, modular structure:
 
@@ -130,19 +113,69 @@ The engine compares content line-by-line, making it extremely resilient to site 
 
 ## 🚀 Key Functionalities
 
-### 🧠 AI-Powered Insights
+### AI-Powered Insights
 Unlike traditional monitors that only detect change, this tool *understands* the change. Using Gemini 1.5 Flash, it filters out noise and summarizes long updates into concise, bulleted insights.
 
-### 🕵️ Advanced Stealth & Anti-Bot
+### Advanced Stealth & Anti-Bot
 Built-in protection against modern bot-detection:
 - **Playwright Stealh**: Overrides `navigator.webdriver`, mocks `chrome` objects, and mimics real-user plugins/MimeTypes.
 - **Human-like Interaction**: Randomized timeouts and specific user-agent rotations.
 - **State Persistence**: Saves browser state (cookies/tokens) after successfully bypassing challenges to ensure smoother subsequent runs.
 
-### ☁️ Cloud-Native Storage
+### Cloud-Native Storage
 Seamlessly switch between:
 - **LocalStorage**: Perfect for single-machine usage.
 - **GCSStorage**: Enterprise-ready storage using Google Cloud Storage, enabling serverless execution on Cloud Run.
+
+---
+
+## ⚙️ Configuration (`config.yaml`)
+
+The heart of the application's configuration is `config/config.yaml`. Here is how to set up the key sections:
+
+### 1. LLM Configuration (`llm`)
+Configures the AI model used for summarization.
+```yaml
+llm:
+  provider: "gemini"
+  model: "gemini-2.5-flash" # or another compatible model
+  # The api_key is securely loaded from your .env file
+```
+
+### 2. Email Configuration (`email`)
+Sets up where the reports are sent from and to.
+```yaml
+email:
+  sender: "your-sending-email@gmail.com"
+  recipient: "where-to-send-reports@example.com"
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  # The password is securely loaded from your .env file
+```
+
+### 3. Monitoring Configuration (`sites`)
+Defines the list of URLs the engine will actively monitor.
+```yaml
+sites:
+  - url: "https://example.com/news/"
+    name: "Example News"
+  - url: "https://techblog.com/videos/"
+    name: "Tech Videos"
+    type: "video" # Optional: provides a hint for specialized fetching if implemented
+```
+
+### 4. System Settings (`System`)
+Controls how data is stored and the sensitivity of the AI trigger.
+```yaml
+# storage_file paths:
+# Local run: "data/history.json" 
+# Cloud Run: "gs://your-gcs-bucket-name/history.json"
+storage_file: "data/history.json" 
+
+# diff_threshold: Controls sensitivity. 
+# It sets the minimum number of NEW characters/words found before triggering the Gemini AI to summarize.
+diff_threshold: 10 
+```
 
 ---
 
