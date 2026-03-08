@@ -54,28 +54,31 @@ The project follows a clean, modular structure:
 
 ```text
 .
-├── config/               # Configuration templates
-│   ├── .env              # Environment variables
-│   └── config.yaml       # Active site configuration
-├── deploy/               # Deployment manifests
-│   ├── .gcloudignore     # Google Cloud ignore file
-│   ├── deploy.ps1        # Deployment script
-│   └── Dockerfile        # Dockerfile
-├── scripts/              # Utility scripts for local execution
-│   └── run.bat           # Run script
-├── src/                  # Application source code
-│   ├── monitor/          # Pipeline logic
-│   │   ├── diff.py       # Diff logic
-│   │   ├── fetcher.py    # Fetcher logic
-│   │   ├── notifier.py   # Notifier logic
-│   │   ├── stealth.py    # Stealth layer logic
-│   │   ├── storage.py    # Storage logic
-│   │   └── summarizer.py # Summarizer logic
-│   └── main.py           # Main entry point
-├── .gitignore            # Git ignore file
-├── LICENSE               # License file
-├── README.md             # Documentation
-└── requirements.txt      # Python dependencies
+├── NotebookLM/              # AI-generated documentation
+│   ├── AI_Webpage_Monitor.mp4  # Video overview of the project
+│   └── Visual Overview.png     # Infographic of the architecture
+├── config/                  # Configuration templates
+│   ├── .env                    # Environment variables
+│   └── config.yaml             # Active site configuration
+├── deploy/                  # Deployment manifests
+│   ├── .gcloudignore           # Google Cloud ignore file
+│   ├── deploy.ps1              # Deployment script
+│   └── Dockerfile              # Dockerfile
+├── scripts/                 # Utility scripts for local execution
+│   └── run.bat                 # Run script
+├── src/                     # Application source code
+│   ├── monitor/                # Pipeline logic
+│   │   ├── diff.py                # Diff logic
+│   │   ├── fetcher.py             # Fetcher logic
+│   │   ├── notifier.py            # Notifier logic
+│   │   ├── stealth.py             # Stealth layer logic
+│   │   ├── storage.py             # Storage logic
+│   │   └── summarizer.py          # Summarizer logic
+│   └── main.py                 # Main entry point
+├── .gitignore               # Git ignore file
+├── LICENSE                  # License file
+├── README.md                # Documentation
+└── requirements.txt         # Python dependencies
 ```
 
 ---
