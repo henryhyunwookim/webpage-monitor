@@ -1,6 +1,6 @@
 # deploy.ps1
 
-$PROJECT_ID = "serp-425005"
+$PROJECT_ID = "gen-lang-client-0480639565"
 $REGION = "us-central1"
 $JOB_NAME = "webpage-monitor-job"
 $IMAGE_NAME = "gcr.io/$PROJECT_ID/$JOB_NAME"

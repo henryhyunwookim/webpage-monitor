@@ -41,4 +41,6 @@ class Notifier:
                 server.send_message(msg)
             logger.info(f"Email sent to {self.recipient}")
         except Exception as e:
-            logger.error(f"Failed to send email: {e}")
+            logger.error("Failed to send email. Check SMTP configuration and credentials.")
+            # For local debugging, we can use a more explicit error but avoid logging it to persistent files
+            # print(f"DEBUG: Email error: {e}") 

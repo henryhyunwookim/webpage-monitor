@@ -1,18 +1,24 @@
-import google.generativeai as genai
+from google import genai
 import os
 import logging
 
 logger = logging.getLogger(__name__)
 
 class Summarizer:
-    def __init__(self, api_key: str = None, model_name: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str = None, model_name: str = "gemini-2.5-flash"):
         # Configure API key
         key = api_key or os.getenv("GOOGLE_API_KEY")
         if not key:
-            logger.warning("No Google API Key found. Summarization will be skipped or fail.")
+            logger.warning("No Google API Key found. Summarization will be skipped.")
+            self.client = None
         else:
-            genai.configure(api_key=key)
-            self.model = genai.GenerativeModel(model_name)
+            try:
+                # Use the new google-genai Client
+                self.client = genai.Client(api_key=key)
+                self.model_name = model_name
+            except Exception as e:
+                logger.error("Failed to initialize Gemini client. Check your API key and network connection.")
+                self.client = None
 
     def summarize(self, text: str, context: dict) -> str:
         if not text or len(text) < 50:
@@ -71,8 +77,17 @@ class Summarizer:
             {task_instruction}
             """
             
-            response = self.model.generate_content(prompt)
+            if not self.client:
+                return "Summarizer not initialized (missing API key or initialization error)."
+
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             return response.text
         except Exception as e:
-            logger.error(f"Error calling Gemini: {e}")
-            return f"Error generating summary: {e}"
+            # We log a generic error to avoid any chance of leaking prompt fragments or keys in logs
+            logger.error(f"Error during summarization. Please check the logs for details.")
+            # For debugging, we can print a more specific message that doesn't go to persistent logs if needed,
+            # but here we'll just return a safe error string.
+            return "Error generating summary. Check API configuration."

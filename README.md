@@ -117,7 +117,7 @@ The engine compares content line-by-line, making it extremely resilient to site 
 ## 🚀 Key Functionalities
 
 ### AI-Powered Insights
-Unlike traditional monitors that only detect change, this tool *understands* the change. Using Gemini 1.5 Flash, it filters out noise and summarizes long updates into concise, bulleted insights.
+Unlike traditional monitors that only detect change, this tool *understands* the change. Using Gemini 2.5 Flash, it filters out noise and summarizes long updates into concise, bulleted insights.
 
 ### Advanced Stealth & Anti-Bot
 Built-in protection against modern bot-detection:
@@ -234,7 +234,8 @@ The repository includes a `deploy/deploy.ps1` script for one-command deployment 
 
 To deploy:
 1. Update `$PROJECT_ID` in `deploy/deploy.ps1`.
-2. Run `pwsh deploy/deploy.ps1` in PowerShell.
+2. Run `powershell -File deploy/deploy.ps1` in PowerShell.
+3. **Crucial**: After deployment, set `GOOGLE_API_KEY` and `SMTP_PASSWORD` as environment variables in the Cloud Run Job configuration (or use Secret Manager).
 
 ---
 
