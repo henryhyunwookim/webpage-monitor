@@ -233,8 +233,8 @@ The repository includes a `deploy/deploy.ps1` script for one-command deployment 
 - **GCS Bucket**: Persists the monitoring history across serverless executions via `gs://<project-id>-monitor-data` in `asia-northeast1`.
 
 To deploy:
-1. Update `$PROJECT_ID` in `deploy/deploy.ps1` (defaults to `gen-lang-client-0480639565` and `asia-northeast1`).
-2. Run `powershell -File deploy/deploy.ps1` in PowerShell.
+1. Ensure your Google Cloud project is configured (`gcloud config set project <PROJECT_ID>`) or pass `-ProjectId "<PROJECT_ID>"`.
+2. Run `powershell -File deploy/deploy.ps1` (defaults to region `asia-northeast1`).
 3. **Crucial**: After deployment, ensure `GOOGLE_API_KEY` and `SMTP_PASSWORD` are set in the Cloud Run Job configuration (or Secret Manager).
 
 ---

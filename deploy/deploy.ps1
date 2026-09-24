@@ -1,7 +1,27 @@
 # deploy.ps1
 
-$PROJECT_ID = "gen-lang-client-0480639565"
-$REGION = "asia-northeast1"
+param(
+    [Parameter(Mandatory = $false)]
+    [string]$ProjectId,
+
+    [Parameter(Mandatory = $false)]
+    [string]$Region = "asia-northeast1"
+)
+
+$PROJECT_ID = if ($ProjectId) {
+    $ProjectId
+} elseif ($env:GOOGLE_CLOUD_PROJECT) {
+    $env:GOOGLE_CLOUD_PROJECT
+} else {
+    (gcloud config get-value project 2>$null).Trim()
+}
+
+if (-not $PROJECT_ID -or $PROJECT_ID -eq "(unset)") {
+    Write-Error "GCP Project is not configured. Specify -ProjectId or run 'gcloud config set project <ID>'."
+    exit 1
+}
+
+$REGION = $Region
 $JOB_NAME = "webpage-monitor-job"
 $IMAGE_NAME = "gcr.io/$PROJECT_ID/$JOB_NAME"
 $BUCKET_NAME = "$PROJECT_ID-monitor-data" 
