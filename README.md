@@ -223,19 +223,19 @@ docker run --env-file .env webpage-monitor
 
 ---
 
-## ☁️ Deployment (Google Cloud Run)
+## ☁️ Deployment (Google Cloud Run - `asia-northeast1`)
 
-The repository includes a `deploy/deploy.ps1` script for one-command deployment to GCP.
+The repository includes a `deploy/deploy.ps1` script for one-command deployment to Google Cloud Platform in the Tokyo region (`asia-northeast1`).
 
 ### Automated Cloud Architecture
-- **Cloud Run Job**: Executes the monitoring logic containerized.
-- **Cloud Scheduler**: Triggers the job daily (or on your preferred schedule).
-- **GCS Bucket**: Persists the monitoring history across serverless executions.
+- **Cloud Run Job**: Executes the monitoring logic containerized in `asia-northeast1`.
+- **Cloud Scheduler**: Triggers the job daily (00:00 KST/JST) in `asia-northeast1`.
+- **GCS Bucket**: Persists the monitoring history across serverless executions via `gs://<project-id>-monitor-data` in `asia-northeast1`.
 
 To deploy:
-1. Update `$PROJECT_ID` in `deploy/deploy.ps1`.
+1. Update `$PROJECT_ID` in `deploy/deploy.ps1` (defaults to `gen-lang-client-0480639565` and `asia-northeast1`).
 2. Run `powershell -File deploy/deploy.ps1` in PowerShell.
-3. **Crucial**: After deployment, set `GOOGLE_API_KEY` and `SMTP_PASSWORD` as environment variables in the Cloud Run Job configuration (or use Secret Manager).
+3. **Crucial**: After deployment, ensure `GOOGLE_API_KEY` and `SMTP_PASSWORD` are set in the Cloud Run Job configuration (or Secret Manager).
 
 ---
 

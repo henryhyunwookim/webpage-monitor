@@ -1,7 +1,7 @@
 # deploy.ps1
 
 $PROJECT_ID = "gen-lang-client-0480639565"
-$REGION = "us-central1"
+$REGION = "asia-northeast1"
 $JOB_NAME = "webpage-monitor-job"
 $IMAGE_NAME = "gcr.io/$PROJECT_ID/$JOB_NAME"
 $BUCKET_NAME = "$PROJECT_ID-monitor-data" 
