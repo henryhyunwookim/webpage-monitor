@@ -1,17 +1,80 @@
-# Environment and Secrets
-.env
-config/.env
+# ===========================================================================
+# Git Ignore Rules for AI Webpage Monitor
+# ===========================================================================
 
-# User specific config
+# --- Environment & Sensitive Files ---
+.env
+.env.*
+!.env.example
+config/.env
+config/.env.*
+!config/.env.example
+*.pem
+*.key
+*.token
+credentials.json
+token.json
+service_account*.json
+
+# --- User Specific Configurations & Local State ---
 config.yaml
 config/config.yaml
 config/config.yml
-
-# Storage and Data
 data/
 logs/
-.vs/
-__pycache__/
-*.pyc
-.DS_Store
 artifacts/
+
+# --- Python & Virtual Environments ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# --- Testing & Quality Caches ---
+tests/
+test/
+__tests__/
+spec/
+*.test.*
+*.spec.*
+test_*.py
+*_test.py
+conftest.py
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+test.db
+*.sqlite3
+
+# --- OS & Editor Settings ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+*~
+.fuse_hidden*
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+
+# --- Logs, Temporary & Scratch Files ---
+*.log
+tmp/
+temp/
+scratch/
+tmp_*.py
+debug_*.py

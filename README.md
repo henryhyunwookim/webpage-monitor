@@ -1,11 +1,11 @@
 # AI Webpage Monitor
 
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Playwright](https://img.shields.io/badge/playwright-v1.40+-green.svg)](https://playwright.dev/)
 [![Gemini AI](https://img.shields.io/badge/AI-Gemini%202.5%20Flash-orange.svg)](https://deepmind.google/technologies/gemini/)
 
-A professional, AI-native webpage monitoring engine designed to track updates, summarize changes with high precision, and deliver actionable insights directly to your inbox. Optimized for both local use and cloud-native deployment on Google Cloud Platform.
+A professional, AI-native webpage monitoring engine designed to track updates across complex dynamic websites, summarize changes with high signal precision using Google Gemini, and deliver actionable insights directly to your inbox. Architected for both local development and zero-downtime serverless deployment on Google Cloud Platform.
 
 ![Architecture Diagram](NotebookLM/Visual%20Overview.png)
 
@@ -13,172 +13,158 @@ A professional, AI-native webpage monitoring engine designed to track updates, s
 
 ## 🏗️ Architecture & System Design
 
-The application follows a modular architecture based on a **Fetch-Extract-Diff-Summarize-Notify** pipeline. This design ensures separation of concerns, allowing for easy updates to the AI model, fetching logic, or storage backend.
+The application follows a decoupled **Fetch-Extract-Diff-Summarize-Notify** pipeline. This modular pattern isolates browser automation, semantic extraction, vector/set comparisons, LLM inference, and multi-channel notifications.
 
-### System Overview
+### System Overview & Execution Flow
 
-Standard flow of the monitoring engine:
+```mermaid
+flowchart TD
+    CONFIG["⚙️ Config & Credentials<br/><code>config/config.yaml</code> + <code>.env</code>"] --> MAIN["🚀 Orchestration Core<br/><code>src/main.py</code> (main)"]
+    
+    subgraph INGESTION["1. Browser Fetching & Stealth Layer"]
+        MAIN --> FET["🌐 Playwright Browser Engine<br/><code>src/monitor/fetcher.py</code>"]
+        STEALTH["🛡️ Stealth Layer (Anti-Bot Bypass)<br/><code>src/monitor/stealth.py</code>"] -.-> FET
+        FET <--> TARGET["🌍 Target Webpages<br/>(SPAs, JavaScript Hydration, SSR)"]
+    end
 
-```text
-[ config.yaml ]       [ .env ]
-       |                 |
-       v                 v
-    +-----------------------+
-    |       src/main.py     | (Orchestrator)
-    +-----------+-----------+
-                |
-    +-----------v-----------+      +-----------------------+
-    |       Fetcher         | <--> |   Target Webpages     |
-    | (Playwright/Stealth)  |      | (Bypass Anti-Bot)     |
-    +-----------+-----------+      +-----------------------+
-                |
-    +-----------v-----------+      +-----------------------+
-    |     Diff Engine       | <--> |    Storage Backend    |
-    | (Set-based comparison)|      | (Local JSON / GCS)    |
-    +-----------+-----------+      +-----------------------+
-                |
-    +-----------v-----------+      +-----------------------+
-    |      Summarizer       | <--> |   Google Gemini AI    |
-    | (Insight Extraction)  |      |   (LMM Analysis)      |
-    +-----------+-----------+      +-----------------------+
-                |
-    +-----------v-----------+      +-----------------------+
-    |       Notifier        | ---> |    User's Inbox       |
-    |  (SMTP / Gmail API)   |      | (Daily Report / MD)   |
-    +-----------------------+      +-----------------------+
+    subgraph EXTRACTION["2. Parsing & Content Extraction"]
+        FET --> PARSE["🧹 DOM Cleanup & Link Preservation<br/>(BeautifulSoup4)"]
+    end
+
+    subgraph DIFF_ENGINE["3. Stateful Diffing & Storage"]
+        PARSE --> DIFF["🔍 Set-Based Diff Engine<br/><code>src/monitor/diff.py</code>"]
+        DIFF <--> STORE[("💾 Pluggable Storage Backend<br/><code>src/monitor/storage.py</code><br/>(Local JSON ↔ GCS Bucket)")]
+    end
+
+    subgraph AI_SUMMARY["4. AI Reasoning & Semantic Summarization"]
+        DIFF -->|New Content &gt; diff_threshold| SUM["🧠 Google Gemini AI<br/><code>src/monitor/summarizer.py</code><br/>(gemini-2.5-flash)"]
+        DIFF -->|No Changes Found| HEARTBEAT["💓 Heartbeat Status Check"]
+    end
+
+    subgraph NOTIFICATION["5. Multi-Channel Notification"]
+        SUM --> NOT["📬 Notifier Service<br/><code>src/monitor/notifier.py</code><br/>(SMTP / Gmail)"]
+        HEARTBEAT --> NOT
+        NOT --> INBOX["📩 User Mailbox<br/>(Daily Markdown / HTML Digest)"]
+    end
 ```
 
 ### Repository Structure
 
-The project follows a clean, modular structure:
-
 ```text
 .
-├── NotebookLM/              # AI-generated documentation
+├── NotebookLM/                 # AI-generated documentation & multimedia
 │   ├── AI_Webpage_Monitor.mp4  # Video overview of the project
 │   └── Visual Overview.png     # Infographic of the architecture
-├── config/                  # Configuration templates
-│   ├── .env                    # Environment variables
-│   └── config.yaml             # Active site configuration
-├── deploy/                  # Deployment manifests
-│   ├── .gcloudignore           # Google Cloud ignore file
-│   ├── deploy.ps1              # Deployment script
-│   └── Dockerfile              # Dockerfile
-├── scripts/                 # Utility scripts for local execution
-│   └── run.bat                 # Run script
-├── src/                     # Application source code
-│   ├── monitor/                # Pipeline logic
-│   │   ├── diff.py                # Diff logic
-│   │   ├── fetcher.py             # Fetcher logic
-│   │   ├── notifier.py            # Notifier logic
-│   │   ├── stealth.py             # Stealth layer logic
-│   │   ├── storage.py             # Storage logic
-│   │   └── summarizer.py          # Summarizer logic
-│   └── main.py                 # Main entry point
-├── .gitignore               # Git ignore file
-├── LICENSE                  # License file
-├── README.md                # Documentation
-└── requirements.txt         # Python dependencies
+├── config/                     # Configuration schemas & templates
+│   ├── .env.example            # Environment variable template
+│   └── config.example.yaml     # Site monitoring configuration template
+├── deploy/                     # Cloud deployment manifests
+│   ├── .gcloudignore           # Google Cloud build ignore rules
+│   ├── deploy.ps1              # Automated Cloud Run & Scheduler deploy script
+│   └── Dockerfile              # Container manifest (Playwright + Python)
+├── scripts/                    # Utility scripts for local execution
+│   └── run.bat                 # Windows execution launcher
+├── src/                        # Application source code
+│   ├── monitor/                # Core pipeline modules
+│   │   ├── diff.py             # Stateful set-based diff algorithm
+│   │   ├── fetcher.py          # Playwright browser lifecycle manager
+│   │   ├── logger.py           # Centralized logging setup
+│   │   ├── notifier.py         # SMTP email delivery client
+│   │   ├── stealth.py          # Anti-bot bypass & browser fingerprint masking
+│   │   ├── storage.py          # Dual-mode storage (Local JSON / Google Cloud Storage)
+│   │   └── summarizer.py       # Google Gemini LLM summarization engine
+│   └── main.py                 # Pipeline entrypoint and orchestration loop
+├── .gitignore                  # Git ignore rules
+├── LICENSE                     # Creative Commons License
+├── README.md                   # System documentation
+└── requirements.txt            # Python dependencies
 ```
+
+---
+
+## 🏛️ Technical & Architectural Decisions
+
+- **Playwright Headless Stealth over Lightweight HTTP Requests (`requests`/`httpx`)**:
+  - *Decision*: Drive a headless Chromium instance equipped with custom stealth evasions rather than issuing standard HTTP GET requests.
+  - *Rationale*: Modern media and technical blogs are increasingly built as Single-Page Applications (SPAs) requiring client-side JavaScript execution. Plain HTTP requests receive blank shells or encounter Cloudflare/DataDome challenges. The stealth layer overrides `navigator.webdriver`, masks Chromium fingerprint markers, and mimics real-user plugins.
+  - *Trade-off*: Higher memory footprint and slightly slower fetch cycle per site, mitigated by sequential execution and headless container recycling.
+
+- **Set-Based Text Diffing over DOM AST Differencing**:
+  - *Decision*: Normalize and compare clean line sets rather than structural HTML Document Object Model trees.
+  - *Rationale*: DOM structures change constantly due to advertising banners, dynamically generated CSS classes, randomized `div` IDs, and timestamp re-renders. Set-based line diffing isolates genuine informational text changes while completely ignoring cosmetic structural shifts.
+  - *Trade-off*: Content reordering without textual alterations is not flagged as a change, which aligns with the goal of tracking editorial content updates.
+
+- **Dual-Mode Pluggable Storage (Local JSON vs. Google Cloud Storage)**:
+  - *Decision*: Automatically toggle between a local filesystem file (`data/history.json`) and a Google Cloud Storage object (`gs://<bucket>/history.json`) based on the URI prefix.
+  - *Rationale*: Enables seamless single-command local testing on developer workstations without GCP credentials while providing state persistence across stateless, ephemeral Google Cloud Run container executions.
 
 ---
 
 ## 🧠 Generalizability & Intelligence
 
-This monitor is designed to be **platform-agnostic** and can be used to track updates on virtually any website. Unlike traditional CSS-selector based tools, it leverages:
+This monitor is **platform-agnostic** and tracks updates across any public web property:
 
 ### 1. Browser-Based Extraction (Playwright)
-By using a real Chromium browser, the monitor can handle:
-- **Single Page Applications (SPAs)**: Even if content is loaded dynamically via JavaScript (React, Vue, etc.), the monitor sees exactly what a user sees.
-- **Anti-Bot Stealth**: Built-in layers to bypass Cloudflare and other automated traffic blockers.
+- **Single Page Applications (SPAs)**: Captures dynamically hydrated DOMs (React, Vue, Angular, Svelte).
+- **Anti-Bot Stealth**: Overrides `navigator.webdriver`, mocks `window.chrome`, rotates user-agents, and persists session cookies.
 
 ### 2. LLM-Powered Semantic Analysis
-Instead of looking for specific HTML tags that might change during a site site redesign, the monitor:
-- Extracts the **raw text content** of the page.
-- Uses **Google Gemini** to "read" and understand the changes.
-- Summarizes only relevant updates, filtering out noise like layout shifts or ads.
+- Strips navigation bars, sidebars, cookie banners, and footers while preserving markdown link anchors.
+- Passes extracted text to **Google Gemini** with structured prompt engineering to:
+  - Extract exact article headlines, publication contexts, and destination URLs.
+  - Synthesize a "So What?" executive summary tailored to strategic impact.
+  - Group findings into actionable bulleted insights.
 
-### 3. Stateful set-based Diffing
-The engine compares content line-by-line, making it extremely resilient to site redesigns while remaining sensitive to new informative text.
-
-### Logical Flow
-1.  **Configuration Loading**: Orchestrates the cycle based on `config.yaml` and environment variables.
-2.  **Intelligent Fetching**: Launches a headless browser instance per site using **Playwright**, applying a sophisticated **Stealth Layer** to bypass automated traffic blockers (Cloudflare, etc.).
-3.  **Content Extraction**: Parses the DOM using BeautifulSoup, striping noise (nav, footer, scripts) while preserving Markdown-style links for AI context.
-4.  **Stateful Diffing**: Compares current content against historical data stored in the **Storage Backend**. It uses a set-based line comparison to identify unique *added* content while ignoring minor layout shifts.
-5.  **AI Analysis**: Sends the "new content" to **Google Gemini**. The system uses specialized prompt engineering to:
-    - Identify specific article titles and source URLs.
-    - Synthesize a "So What?" focused summary.
-    - Extract key strategic insights.
-6.  **Reporting**: Aggregates all site updates into a single Markdown-formatted email. Supports a "No New Content" heartbeat to confirm system health.
+### 3. Stateful Set-Based Diffing
+- Compares normalized lines against prior runs stored in `storage_file`.
+- Evaluates `diff_threshold` (minimum character/token count) to prevent trivial false-positive runs caused by copyright year updates or minor typo fixes.
 
 ---
 
-## 🚀 Key Functionalities
+## ⚙️ Configuration
 
-### AI-Powered Insights
-Unlike traditional monitors that only detect change, this tool *understands* the change. Using Gemini 2.5 Flash, it filters out noise and summarizes long updates into concise, bulleted insights.
+Copy the example configuration files in [config/](config/):
 
-### Advanced Stealth & Anti-Bot
-Built-in protection against modern bot-detection:
-- **Playwright Stealh**: Overrides `navigator.webdriver`, mocks `chrome` objects, and mimics real-user plugins/MimeTypes.
-- **Human-like Interaction**: Randomized timeouts and specific user-agent rotations.
-- **State Persistence**: Saves browser state (cookies/tokens) after successfully bypassing challenges to ensure smoother subsequent runs.
-
-### Cloud-Native Storage
-Seamlessly switch between:
-- **LocalStorage**: Perfect for single-machine usage.
-- **GCSStorage**: Enterprise-ready storage using Google Cloud Storage, enabling serverless execution on Cloud Run.
-
----
-
-## ⚙️ Configuration (`config.yaml`)
-
-The heart of the application's configuration is `config/config.yaml`. Here is how to set up the key sections:
-
-### 1. LLM Configuration (`llm`)
-Configures the AI model used for summarization.
-```yaml
-llm:
-  provider: "gemini"
-  model: "gemini-2.5-flash" # or another compatible model
-  # The api_key is securely loaded from your .env file
+```bash
+# Set up active configuration
+cp config/config.example.yaml config/config.yaml
+cp config/.env.example config/.env
 ```
 
-### 2. Email Configuration (`email`)
-Sets up where the reports are sent from and to.
+### 1. `config/config.yaml` Schema
+
 ```yaml
+# LLM Configuration
+llm:
+  provider: "gemini"
+  model: "gemini-2.5-flash"
+
+# Email Configuration
 email:
   sender: "your-sending-email@gmail.com"
   recipient: "where-to-send-reports@example.com"
   smtp_server: "smtp.gmail.com"
   smtp_port: 587
-  # The password is securely loaded from your .env file
-```
 
-### 3. Monitoring Configuration (`sites`)
-Defines the list of URLs the engine will actively monitor.
-```yaml
+# Target Websites Matrix
 sites:
   - url: "https://example.com/news/"
     name: "Example News"
-  - url: "https://techblog.com/videos/"
-    name: "Tech Videos"
-    type: "video" # Optional: provides a hint for specialized fetching if implemented
+  - url: "https://techblog.com/"
+    name: "Tech Blog"
+    type: "video" # Optional: specialized parser hint
+
+# System & Storage
+storage_file: "data/history.json" # Local path or gs://your-bucket-name/history.json
+diff_threshold: 10                # Minimum added characters before triggering AI summary
 ```
 
-### 4. System Settings (`System`)
-Controls how data is stored and the sensitivity of the AI trigger.
-```yaml
-# storage_file paths:
-# Local run: "data/history.json" 
-# Cloud Run: "gs://your-gcs-bucket-name/history.json"
-storage_file: "data/history.json" 
+### 2. Environment Variables (`.env`)
 
-# diff_threshold: Controls sensitivity. 
-# It sets the minimum number of NEW characters/words found before triggering the Gemini AI to summarize.
-diff_threshold: 10 
-```
+| Variable | Description | Required | Example |
+| :--- | :--- | :--- | :--- |
+| `GOOGLE_API_KEY` | Gemini API key from Google AI Studio | **Yes** | `AIzaSy...` |
+| `SMTP_PASSWORD` | Gmail App Password (16 characters) | **Yes** | `abcd efgh ijkl mnop` |
 
 ---
 
@@ -186,59 +172,66 @@ diff_threshold: 10
 
 ### Prerequisites
 - **Python 3.10+**
-- **Google Cloud API Key** (for Gemini)
-- **Gmail Account** (for sending reports)
+- **Google Cloud API Key** (Gemini API access)
+- **Gmail Account** with 2-Step Verification and an generated App Password
 
-### 1. Installation
+### 1. Local Setup
+
 ```bash
+# Clone the repository
 git clone https://github.com/henryhyunwookim/webpage-monitor.git
 cd webpage-monitor
+
+# Create and activate virtual environment
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 2. Configuration
-Create a `.env` file:
+### 2. Execution
+
 ```bash
-GOOGLE_API_KEY=your_gemini_key
-SMTP_PASSWORD=your_gmail_app_password
+# Run locally via script launcher (Windows)
+.\scripts\run.bat
+
+# Or run directly via Python orchestrator
+python src/main.py --config config/config.yaml
 ```
 
-### 3. Execution
+### 3. Docker Execution
 
-Run the monitor locally:
-```bash
-# Using the Windows runner
-./scripts/run.bat
-
-# Or directly via Python
-python src/main.py
-```
-
-Run using Docker:
 ```bash
 docker build -t webpage-monitor -f deploy/Dockerfile .
-docker run --env-file .env webpage-monitor
+docker run --env-file config/.env webpage-monitor
 ```
 
 ---
 
-## ☁️ Deployment (Google Cloud Run - `asia-northeast1`)
+## ☁️ Deployment (Google Cloud Run & Cloud Scheduler)
 
-The repository includes a `deploy/deploy.ps1` script for one-command deployment to Google Cloud Platform in the Tokyo region (`asia-northeast1`).
+The repository provides an automated PowerShell deployment script in [deploy/deploy.ps1](deploy/deploy.ps1) targeting Google Cloud Platform in the Tokyo region (`asia-northeast1`).
 
-### Automated Cloud Architecture
-- **Cloud Run Job**: Executes the monitoring logic containerized in `asia-northeast1`.
-- **Cloud Scheduler**: Triggers the job daily (00:00 KST/JST) in `asia-northeast1`.
-- **GCS Bucket**: Persists the monitoring history across serverless executions via `gs://<project-id>-monitor-data` in `asia-northeast1`.
+### Serverless Cloud Architecture
+- **Cloud Run Job**: Executes containerized Chromium in `asia-northeast1`.
+- **Cloud Scheduler**: Triggers daily execution (e.g., 00:00 JST/KST) via Cloud Run Invoker IAM.
+- **Google Cloud Storage**: Maintains state history across job instances at `gs://<project-id>-monitor-data/history.json`.
 
-To deploy:
-1. Ensure your Google Cloud project is configured (`gcloud config set project <PROJECT_ID>`) or pass `-ProjectId "<PROJECT_ID>"`.
-2. Run `powershell -File deploy/deploy.ps1` (defaults to region `asia-northeast1`).
-3. **Crucial**: After deployment, ensure `GOOGLE_API_KEY` and `SMTP_PASSWORD` are set in the Cloud Run Job configuration (or Secret Manager).
+```powershell
+# Deploy to Google Cloud Platform
+powershell -File deploy/deploy.ps1 -ProjectId "YOUR_GCP_PROJECT_ID" -Region "asia-northeast1"
+```
+
+> [!IMPORTANT]
+> Ensure that `GOOGLE_API_KEY` and `SMTP_PASSWORD` are configured in the Cloud Run Job environment variables or linked to GCP Secret Manager after deployment.
 
 ---
 
 ## 📜 License
-Creative Commons Attribution-NonCommercial 4.0 International License.
-See [LICENSE](LICENSE) file for details.
+
+This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License](LICENSE).
